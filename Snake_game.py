@@ -2,99 +2,105 @@ import pygame
 from pygame.locals import *
 import random
 
-# Define o tamanho da tela para o jogo e o tamanho do Pixel da cobrinha.
-tamanho_janela = (600, 600)
-tamanho_pixel = 10
+# Define o tamanho da tela para o jogo e o tamanho do Pixel da cobrinha
+tamanho_janela = (600, 600)  # Largura e altura da tela do jogo em pixels
+tamanho_pixel = 10          # Tamanho de cada "pixel" da cobrinha e da maçã
 
 # Função para criar colisão no corpo da cobrinha
 def collision(pos1, pos2):
+    # Verifica se duas posições são iguais
     return pos1 == pos2
 
 # Função para limitar o movimento da cobrinha à tela do jogo
 def off_limits(pos):
-    return not (0 <= pos[0] < tamanho_janela[0] and 0 <= pos[1] < tamanho_janela[1])
+    # Verifica se a posição está fora dos limites da tela
+    if 0 <= pos[0] < tamanho_janela[0] and 0 <= pos[1] < tamanho_janela[1]:
+        return False  # Dentro dos limites
+    else:
+        return True   # Fora dos limites
 
-# Função para posicionar a maçã de maneira aleatória, mas limitar ela pela tela do jogo
+# Função para posicionar a maçã de maneira aleatória, mas garantir que ela esteja alinhada com o tamanho do pixel
 def random_on_grid():
-    x = random.randint(0, (tamanho_janela[0] // tamanho_pixel) - 1) * tamanho_pixel
-    y = random.randint(0, (tamanho_janela[1] // tamanho_pixel) - 1) * tamanho_pixel
-    return x, y
+    # Gera uma posição aleatória alinhada com a grade de pixels
+    x = random.randint(0, tamanho_janela[0])
+    y = random.randint(0, tamanho_janela[1])
+    return x // tamanho_pixel * tamanho_pixel, y // tamanho_pixel * tamanho_pixel
 
-# Inicializa o pygame e cria a tela do jogo
-pygame.init()
-screen = pygame.display.set_mode(tamanho_janela)
-pygame.display.set_caption('Snake Game')
+# Cria e inicia o programa para abrir o jogo
+pygame.init()  # Inicializa o Pygame
+screen = pygame.display.set_mode(tamanho_janela)  # Define o tamanho da tela do jogo
+pygame.display.set_caption('Snake Game')  # Define o título da janela
 
-# Elementos do jogo
-snake_pos = [(250, 50), (260, 50), (270, 50)]
-snake_surface = pygame.Surface((tamanho_pixel, tamanho_pixel))
-snake_surface.fill((255, 255, 255))
-snake_direction = K_LEFT
-next_direction = K_LEFT
+# Elemento que cria a 'cobrinha' do jogo e posiciona ela
+snake_pos = [(250, 50), (260, 50), (270, 50)]  # Lista de posições da cobrinha
+snake_surface = pygame.Surface((tamanho_pixel, tamanho_pixel))  # Cria a superfície para a cobrinha
+snake_surface.fill((255, 255, 255))  # Define a cor da cobrinha (branco)
+snake_direction = K_LEFT  # Direção inicial da cobrinha
+# Note que a variável next_direction foi removida aqui
 
-# Elementos da maçã
-apple_surface = pygame.Surface((tamanho_pixel, tamanho_pixel))
-apple_surface.fill((255, 0, 0)) 
-apple_pos = random_on_grid()
+# Elemento que cria a 'maçã' do jogo e posiciona ela
+apple_surface = pygame.Surface((tamanho_pixel, tamanho_pixel))  # Cria a superfície para a maçã
+apple_surface.fill((255, 0, 0))  # Define a cor da maçã (vermelho)
+apple_pos = random_on_grid()  # Define a posição inicial da maçã
 
 def restart_game():
-    global snake_pos, apple_pos, snake_direction, next_direction
-    snake_pos = [(250, 50), (260, 50), (270, 50)]
-    snake_direction = K_LEFT
-    next_direction = K_LEFT
-    apple_pos = random_on_grid()
+    global snake_pos, apple_pos, snake_direction
+    # Reseta o jogo para o estado inicial
+    snake_pos = [(250, 50), (260, 50), (270, 50)]  # Posições iniciais da cobrinha
+    snake_direction = K_LEFT  # Direção inicial
+    apple_pos = random_on_grid()  # Nova posição da maçã
 
 def is_opposite_direction(direction1, direction2):
+    # Verifica se duas direções são opostas
     return (direction1 == K_UP and direction2 == K_DOWN) or \
            (direction1 == K_DOWN and direction2 == K_UP) or \
            (direction1 == K_LEFT and direction2 == K_RIGHT) or \
            (direction1 == K_RIGHT and direction2 == K_LEFT)
 
 while True:
-    pygame.time.Clock().tick(10)
-    screen.fill((0, 0, 0))
-    for event in pygame.event.get():
-        if event.type == QUIT:
-            pygame.quit()
-            quit()
-        elif event.type == KEYDOWN:
-            if event.key in [K_UP, K_DOWN, K_LEFT, K_RIGHT]:
-                if not is_opposite_direction(snake_direction, event.key):
-                    next_direction = event.key
+    pygame.time.Clock().tick(10)  # Controla a taxa de quadros por segundo (FPS)
+    screen.fill((0, 0, 0))  # Limpa a tela com a cor preta
     
-    # Atualiza a direção da cobrinha
-    snake_direction = next_direction
-
-    # Move a cobrinha
-    head_x, head_y = snake_pos[0]
-    if snake_direction == K_UP:
-        new_head = (head_x, head_y - tamanho_pixel)
-    elif snake_direction == K_DOWN:
-        new_head = (head_x, head_y + tamanho_pixel)
-    elif snake_direction == K_LEFT:
-        new_head = (head_x - tamanho_pixel, head_y)
-    elif snake_direction == K_RIGHT:
-        new_head = (head_x + tamanho_pixel, head_y)
-
-    # Checa se a cobrinha bateu nas bordas
-    if off_limits(new_head):
-        restart_game()
-
-    # Checa se a cobrinha bateu no corpo
-    if collision(new_head, snake_pos[0]) or new_head in snake_pos[1:]:
-        restart_game()
-
-    # Atualiza a posição da cobrinha
-    snake_pos = [new_head] + snake_pos[:-1]
-
-    # Checa se a cobrinha comeu a maçã
-    if collision(new_head, apple_pos):
-        snake_pos.append(snake_pos[-1])  # Adiciona um novo segmento à cobrinha
-        apple_pos = random_on_grid()
-
-    # Desenha a maçã e a cobrinha
-    screen.blit(apple_surface, apple_pos)
-    for pos in snake_pos:
+    for event in pygame.event.get():  # Processa eventos
+        if event.type == QUIT:  # Se o evento for fechar a janela
+            pygame.quit()  # Fecha o Pygame
+            quit()  # Encerra o programa
+        elif event.type == KEYDOWN:  # Se uma tecla for pressionada
+            if event.key in [K_UP, K_DOWN, K_LEFT, K_RIGHT]:
+                # Atualiza a direção da cobrinha se a nova direção não for oposta à atual
+                if not is_opposite_direction(snake_direction, event.key):
+                    snake_direction = event.key
+    
+    # Desenha a maçã e a cobrinha na tela
+    screen.blit(apple_surface, apple_pos)  # Desenha a maçã
+    for pos in snake_pos:  # Desenha a cobrinha
         screen.blit(snake_surface, pos)
-
-    pygame.display.update()
+    
+    # Verifica se a cobrinha colidiu com a maçã
+    if collision(apple_pos, snake_pos[0]):
+        # Adiciona um novo segmento à cobrinha (temporariamente fora da tela)
+        snake_pos.append((-10, -10))
+        apple_pos = random_on_grid()  # Define uma nova posição para a maçã
+    
+    # Move a cobrinha
+    for i in range(len(snake_pos) - 1, 0, -1):
+        # Move cada segmento da cobrinha para a posição do segmento anterior
+        if collision(snake_pos[0], snake_pos[i]):
+            restart_game()  # Reinicia o jogo se a cabeça da cobrinha colidir com seu corpo
+        snake_pos[i] = snake_pos[i - 1]
+    
+    # Checa se a cobrinha saiu dos limites
+    if off_limits(snake_pos[0]):
+        restart_game()  # Reinicia o jogo se a cobrinha sair dos limites
+    
+    # Atualiza a posição da cabeça da cobrinha com base na direção
+    if snake_direction == K_UP:
+        snake_pos[0] = (snake_pos[0][0], snake_pos[0][1] - tamanho_pixel)
+    elif snake_direction == K_DOWN:
+        snake_pos[0] = (snake_pos[0][0], snake_pos[0][1] + tamanho_pixel)
+    elif snake_direction == K_LEFT:
+        snake_pos[0] = (snake_pos[0][0] - tamanho_pixel, snake_pos[0][1])
+    elif snake_direction == K_RIGHT:
+        snake_pos[0] = (snake_pos[0][0] + tamanho_pixel, snake_pos[0][1])
+    
+    pygame.display.update()  # Atualiza a tela com as novas posições
